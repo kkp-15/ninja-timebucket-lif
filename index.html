@@ -1,0 +1,196 @@
+<!DOCTYPE html><html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タイムバケット可視化ツール</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f4f8;
+      text-align: center;
+      padding: 1rem;
+    }
+    input, button, select {
+      margin: 0.5rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    table {
+      margin: 1rem auto;
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 600px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+    }
+    th {
+      background-color: #eee;
+    }
+    canvas {
+      max-width: 600px;
+      margin: 1rem auto;
+    }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+    .x-share {
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>タイムバケット可視化ツール</h1>  <div>
+    <label>生年月日: <input type="date" id="birth"></label><br>
+    <label>想定寿命: <input type="number" id="lifeExpectancy" value="80"> 歳</label><br>
+    <label>やりたいこと: <input type="text" id="taskInput">
+    <label>所要時間（時間）: <input type="number" id="taskHours" min="1" value="10">
+    <button onclick="addTask()">追加</button></label>
+  </div>  <ul id="taskList"></ul><button onclick="calculateTime()">残り時間を計算</button>
+
+  <div id="result"></div>
+  <div class="x-share" id="shareButton" style="display: none;"></div>
+  <canvas id="pieChart"></canvas>
+  <canvas id="barChart"></canvas>  <footer>
+    <p>📎 <a href="https://x.com/kkp_webninja" target="_blank">@kkp_webninja</a> をフォロー</p>
+  </footer>  <script>
+    const tasks = [];
+    let pieChart, barChart;
+
+    function addTask() {
+      const name = document.getElementById('taskInput').value.trim();
+      const hours = parseInt(document.getElementById('taskHours').value);
+      if (name && hours > 0) {
+        tasks.push({ name, hours });
+        document.getElementById('taskInput').value = '';
+        document.getElementById('taskHours').value = 10;
+        renderTaskList();
+      }
+    }
+
+    function editTask(index) {
+      const newName = prompt("新しいやりたいことの名前を入力", tasks[index].name);
+      const newHours = parseInt(prompt("所要時間（時間）を入力", tasks[index].hours));
+      if (newName && newHours > 0) {
+        tasks[index] = { name: newName, hours: newHours };
+        renderTaskList();
+      }
+    }
+
+    function deleteTask(index) {
+      if (confirm("この項目を削除しますか？")) {
+        tasks.splice(index, 1);
+        renderTaskList();
+      }
+    }
+
+    function renderTaskList() {
+      const list = document.getElementById('taskList');
+      list.innerHTML = '';
+      tasks.forEach((task, i) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${task.name}（${task.hours}時間 ≒ ${(task.hours / 24).toFixed(1)}日）</span>
+          <button onclick="editTask(${i})">✏</button>
+          <button onclick="deleteTask(${i})">❌</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    function calculateTime() {
+      const birth = new Date(document.getElementById('birth').value);
+      const expectancy = parseInt(document.getElementById('lifeExpectancy').value);
+      const today = new Date();
+      const age = today.getFullYear() - birth.getFullYear() - ((today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())) ? 1 : 0);
+      const remainingYears = expectancy - age;
+
+      const sleepHoursPerDay = 7;
+      const freeHoursPerDay = 24 - sleepHoursPerDay;
+      const remainingDays = remainingYears * 365;
+      const totalFreeHours = remainingDays * freeHoursPerDay;
+
+      let html = `<p>現在 ${age} 歳。残り ${remainingYears} 年（約 ${remainingDays.toLocaleString()} 日、${totalFreeHours.toLocaleString()} 時間の自由時間※睡眠7時間除く）があります。</p>`;
+
+      if (tasks.length === 0) {
+        html += '<p>やりたいことがまだ入力されていません。</p>';
+        document.getElementById('shareButton').style.display = 'none';
+      } else {
+        html += '<table><tr><th>やりたいこと</th><th>所要時間</th></tr>';
+        const data = tasks.map(task => task.hours);
+        for (let i = 0; i < tasks.length; i++) {
+          const days = (tasks[i].hours / 24).toFixed(1);
+          html += `<tr><td>${tasks[i].name}</td><td>${tasks[i].hours.toLocaleString()} 時間（約 ${days} 日）</td></tr>`;
+        }
+        html += '</table>';
+
+        drawCharts(tasks.map(t => t.name), data);
+
+        // シェア文作成
+        let taskSummary = tasks.map(t => `・${t.name} ${t.hours}h`).join(' ');
+        const baseText = `私はあと約${remainingDays.toLocaleString()}日、${totalFreeHours.toLocaleString()}時間の自由時間があるらしい！\n✅ やりたいこと：\n`;
+        const limit = 280 - baseText.length - 30;
+        let shortTasks = [...tasks];
+        while (taskSummary.length > limit && shortTasks.length > 0) {
+          shortTasks.pop();
+          taskSummary = shortTasks.map(t => `・${t.name} ${t.hours}h`).join(' ') + ' …';
+        }
+
+        const tweetText = encodeURIComponent(baseText + taskSummary + '\n👉');
+        const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}&url=${location.href}`;
+        document.getElementById('shareButton').innerHTML = `<a href="${tweetUrl}" target="_blank">📣 結果をXでシェアする</a>`;
+        document.getElementById('shareButton').style.display = 'block';
+      }
+
+      document.getElementById('result').innerHTML = html;
+    }
+
+    function drawCharts(labels, data) {
+      if (pieChart) pieChart.destroy();
+      if (barChart) barChart.destroy();
+
+      const colors = ['#f66', '#6cf', '#6f6', '#fc6', '#ccc', '#c6f', '#f9c', '#9cf'];
+
+      const pieCtx = document.getElementById('pieChart').getContext('2d');
+      pieChart = new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: colors.slice(0, labels.length)
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+
+      const barCtx = document.getElementById('barChart').getContext('2d');
+      barChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '所要時間（時間）',
+            data: data,
+            backgroundColor: colors.slice(0, labels.length)
+          }]
+        },
+        options: {
+          responsive: true,
+          indexAxis: 'y',
+          scales: {
+            x: { beginAtZero: true }
+          }
+        }
+      });
+    }
+  </script></body>
+</html>
