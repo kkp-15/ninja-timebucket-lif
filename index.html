@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="ja">
+<!DOCTYPE html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,19 +9,40 @@
     body {
       font-family: sans-serif;
       background-color: #f0f4f8;
-      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
       padding: 1rem;
     }
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+    }
     input, button, select {
-      margin: 0.5rem;
+      margin: 0.5rem 0;
       padding: 0.5rem;
       font-size: 1rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    label {
+      display: block;
+      text-align: left;
+    }
+    ul {
+      padding-left: 0;
+    }
+    li {
+      list-style: none;
+      margin: 0.3rem 0;
     }
     table {
       margin: 1rem auto;
       border-collapse: collapse;
-      width: 90%;
-      max-width: 600px;
+      width: 100%;
     }
     th, td {
       border: 1px solid #ccc;
@@ -30,38 +52,65 @@
       background-color: #eee;
     }
     canvas {
-      max-width: 600px;
-      margin: 1rem auto;
+      width: 100% !important;
+      height: auto !important;
+      margin: 1rem 0;
     }
     footer {
       margin-top: 2rem;
       font-size: 0.9rem;
+      text-align: center;
     }
     .x-share {
       margin-top: 1rem;
+      text-align: center;
     }
     #totalHoursDisplay {
       font-size: 1rem;
       margin-top: 0.5rem;
+      text-align: center;
+    }
+    button.inline {
+      display: inline-block;
+      width: auto;
+      margin-left: 0.5rem;
     }
   </style>
 </head>
 <body>
-  <h1>タイムバケット可視化ツール</h1>  <div>
-    <label>生年月日: <input type="date" id="birth"></label><br>
-    <label>想定寿命: <input type="number" id="lifeExpectancy" value="80"> 歳</label><br>
-    <label>やりたいこと: <input type="text" id="taskInput">
-    <label>所要時間（時間）: <input type="number" id="taskHours" min="1" value="10">
-    <button onclick="addTask()">追加</button></label>
-    <div id="totalHoursDisplay"></div>
-  </div>  <ul id="taskList"></ul><button onclick="calculateTime()">残り時間を計算</button>
+  <div class="container">
+    <h1>タイムバケット可視化ツール</h1>
 
-  <div id="result"></div>
-  <div class="x-share" id="shareButton" style="display: none;"></div>
-  <canvas id="pieChart"></canvas>
-  <canvas id="barChart"></canvas>  <footer>
-    <p>📎 <a href="https://x.com/kkp_webninja" target="_blank">@kkp_webninja</a> をフォロー</p>
-  </footer>  <script>
+    <label>生年月日:
+      <input type="date" id="birth">
+    </label>
+    <label>想定寿命:
+      <input type="number" id="lifeExpectancy" value="80"> 歳
+    </label>
+    <label>やりたいこと:
+      <input type="text" id="taskInput">
+    </label>
+    <label>所要時間（時間）:
+      <input type="number" id="taskHours" min="1" value="10">
+    </label>
+    <button onclick="addTask()">追加</button>
+    <div id="totalHoursDisplay"></div>
+
+    <ul id="taskList"></ul>
+
+    <button onclick="calculateTime()">残り時間を計算</button>
+
+    <div id="result"></div>
+    <div class="x-share" id="shareButton" style="display: none;"></div>
+    <canvas id="pieChart"></canvas>
+    <canvas id="barChart"></canvas>
+
+    <footer>
+      📎 <a href="https://x.com/kkp_webninja" target="_blank">@kkp_webninja</a> をフォロー
+    </footer>
+  </div>
+
+  <script>
     const tasks = [];
     let pieChart, barChart;
 
@@ -74,6 +123,7 @@
         document.getElementById('taskHours').value = 10;
         renderTaskList();
         updateTotalHoursDisplay();
+        calculateTime();
       }
     }
 
@@ -84,6 +134,7 @@
         tasks[index] = { name: newName, hours: newHours };
         renderTaskList();
         updateTotalHoursDisplay();
+        calculateTime();
       }
     }
 
@@ -92,6 +143,7 @@
         tasks.splice(index, 1);
         renderTaskList();
         updateTotalHoursDisplay();
+        calculateTime();
       }
     }
 
@@ -102,8 +154,8 @@
         const li = document.createElement('li');
         li.innerHTML = `
           <span>${task.name}（${task.hours}時間 ≒ ${(task.hours / 24).toFixed(1)}日）</span>
-          <button onclick="editTask(${i})">✏</button>
-          <button onclick="deleteTask(${i})">❌</button>
+          <button class="inline" onclick="editTask(${i})">✏</button>
+          <button class="inline" onclick="deleteTask(${i})">❌</button>
         `;
         list.appendChild(li);
       });
@@ -135,7 +187,6 @@
       const remainingPercent = (100 - usedPercent).toFixed(1);
 
       let html = `<p>現在 ${age} 歳。残り ${remainingYears} 年（約 ${remainingDays.toLocaleString()} 日、${totalFreeHours.toLocaleString()} 時間の自由時間※睡眠7時間除く）があります。</p>`;
-
       html += `<p>📝 合計やりたいことの所要時間: ${usedHours.toLocaleString()} 時間（約 ${usedDays} 日、${usedPercent}%）</p>`;
       html += `<p>🕓 残りの自由時間（未使用）: ${remainingFreeHours.toLocaleString()} 時間（約 ${remainingFreeDays} 日、${remainingPercent}%）</p>`;
 
@@ -151,7 +202,10 @@
         }
         html += '</table>';
 
-        drawCharts(tasks.map(t => t.name), data);
+        const chartLabels = tasks.map(t => t.name).concat('その他');
+        const chartData = tasks.map(t => t.hours).concat(remainingFreeHours);
+
+        drawCharts(chartLabels, chartData);
 
         let taskSummary = tasks.map(t => `・${t.name} ${t.hours}h`).join(' ');
         const baseText = `私はあと約${remainingDays.toLocaleString()}日、${totalFreeHours.toLocaleString()}時間の自由時間があるらしい！\n✅ やりたいこと：\n`;
@@ -175,7 +229,7 @@
       if (pieChart) pieChart.destroy();
       if (barChart) barChart.destroy();
 
-      const colors = ['#f66', '#6cf', '#6f6', '#fc6', '#ccc', '#c6f', '#f9c', '#9cf'];
+      const colors = ['#f66', '#6cf', '#6f6', '#fc6', '#ccc', '#c6f', '#f9c', '#9cf', '#aaa'];
 
       const pieCtx = document.getElementById('pieChart').getContext('2d');
       pieChart = new Chart(pieCtx, {
@@ -215,5 +269,6 @@
         }
       });
     }
-  </script></body>
+  </script>
+</body>
 </html>
