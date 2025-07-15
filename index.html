@@ -131,11 +131,13 @@
       const usedDays = (usedHours / 24).toFixed(1);
       const remainingFreeHours = totalFreeHours - usedHours;
       const remainingFreeDays = (remainingFreeHours / 24).toFixed(1);
+      const usedPercent = ((usedHours / totalFreeHours) * 100).toFixed(1);
+      const remainingPercent = (100 - usedPercent).toFixed(1);
 
       let html = `<p>現在 ${age} 歳。残り ${remainingYears} 年（約 ${remainingDays.toLocaleString()} 日、${totalFreeHours.toLocaleString()} 時間の自由時間※睡眠7時間除く）があります。</p>`;
 
-      html += `<p>📝 合計やりたいことの所要時間: ${usedHours.toLocaleString()} 時間（約 ${usedDays} 日）</p>`;
-      html += `<p>🕓 残りの自由時間（未使用）: ${remainingFreeHours.toLocaleString()} 時間（約 ${remainingFreeDays} 日）</p>`;
+      html += `<p>📝 合計やりたいことの所要時間: ${usedHours.toLocaleString()} 時間（約 ${usedDays} 日、${usedPercent}%）</p>`;
+      html += `<p>🕓 残りの自由時間（未使用）: ${remainingFreeHours.toLocaleString()} 時間（約 ${remainingFreeDays} 日、${remainingPercent}%）</p>`;
 
       if (tasks.length === 0) {
         html += '<p>やりたいことがまだ入力されていません。</p>';
